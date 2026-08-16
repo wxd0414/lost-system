@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>失物招领助手</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-container {
+            width: 420px;
+            height: 700px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-avatar {
+            width: 42px;
+            height: 42px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .header-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-info p {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            margin-right: 10px;
+        }
+
+        .message.user .message-avatar {
+            background: #e9ecef;
+            margin-left: 10px;
+            order: 2;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        .message.bot .message-bubble {
+            background: #fff;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        .message.user .message-bubble {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 12px 16px;
+            background: #fff;
+            border-radius: 16px;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            max-width: 75%;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            margin-right: 4px;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-6px); opacity: 1; }
+        }
+
+        .chat-input-area {
+            padding: 16px 20px;
+            background: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input-area textarea {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            max-height: 80px;
+            line-height: 1.5;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input-area textarea:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, opacity 0.2s;
+            flex-shrink: 0;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .user-id-badge {
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.15);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background 0.2s, transform 0.3s;
+            padding: 0;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+            transform: rotate(180deg);
+        }
+
+        .header-actions {
+            margin-left: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .header-action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.2s;
+        }
+
+        .header-action-btn:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .header-action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="header-avatar">🔍</div>
+            <div class="header-info">
+                <h3>失物招领助手</h3>
+                <p>您好！我可以帮您登记或查询失物信息</p>
+                <span class="user-id-badge">
+                    <span id="userIdBadge"></span>
+                    <button class="refresh-btn" onclick="regenerateUserId()" title="换一个身份">
+                        &#x21bb;
+                    </button>
+                </span>
+            </div>
+            <div class="header-actions">
+                <button class="header-action-btn" id="historyBtn" onclick="loadChatHistory()" title="查询历史聊天记录">
+                    📜 查询历史聊天记录
+                </button>
+                <button class="header-action-btn" id="clearBtn" onclick="clearChatHistory()" title="删除历史记录">
+                    🗑 删除历史记录
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-bubble">您好！我是失物招领助手，请问有什么可以帮您的？
+
+如果您丢失了物品，请告诉我：
+• 丢失了什么物品
+• 您的姓名和手机号
+
+我会帮您登记失物信息。</div>
+            </div>
+        </div>
+
+        <div class="chat-input-area">
+            <textarea id="messageInput" placeholder="请输入您的消息..." rows="1"></textarea>
+            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 生成随机 userId
+        let userId = 'user_' + Math.random().toString(36).substring(2, 10);
+        document.getElementById('userIdBadge').textContent = 'ID: ' + userId;
+
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        function regenerateUserId() {
+            userId = 'user_' + Math.random().toString(36).substring(2, 10);
+            document.getElementById('userIdBadge').textContent = 'ID: ' + userId;
+            // 清空聊天记录，模拟新用户
+            chatMessages.innerHTML = '';
+            addMessage('您好！我是失物招领助手，请问有什么可以帮您的？\n\n如果您丢失了物品，请告诉我：\n• 丢失了什么物品\n• 您的姓名和手机号\n\n我会帮您登记失物信息。', 'bot');
+            // 自动恢复新用户的历史聊天记录（无记录时保留欢迎语）
+            loadChatHistory(true);
+        }
+
+        // 自动调整输入框高度
+        messageInput.addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+        });
+
+        // 回车发送（Shift+回车换行）
+        messageInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function addMessage(content, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + type;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = type === 'bot' ? '🤖' : '👤';
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = content;
+
+            if (type === 'bot') {
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(bubble);
+            } else {
+                messageDiv.appendChild(bubble);
+                messageDiv.appendChild(avatar);
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTyping() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.id = 'typingMessage';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = '🤖';
+
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.style.display = 'block';
+            indicator.innerHTML = '<span></span><span></span><span></span>';
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(indicator);
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTyping() {
+            const typing = document.getElementById('typingMessage');
+            if (typing) typing.remove();
+        }
+
+        // 查询历史聊天记录：按时间升序拉取后重新渲染对话区
+        // auto=true 时为页面加载自动恢复：无记录时保留欢迎语，不提示"暂无"
+        async function loadChatHistory(auto = false) {
+            const historyBtn = document.getElementById('historyBtn');
+            historyBtn.disabled = true;
+            try {
+                const response = await fetch(`/ai/chat-history?userId=${encodeURIComponent(userId)}&page=0&size=100&sort=createdDate,ASC`);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+                const records = data.content || [];
+                if (records.length === 0) {
+                    if (!auto) {
+                        chatMessages.innerHTML = '';
+                        addMessage('暂无历史聊天记录，快来和我对话吧～', 'bot');
+                    }
+                    return;
+                }
+                chatMessages.innerHTML = '';
+                records.forEach(record => {
+                    // role: 1=用户，2=系统
+                    addMessage(record.content, record.role === '2' ? 'bot' : 'user');
+                });
+            } catch (error) {
+                console.error('加载历史记录失败:', error);
+                if (!auto) {
+                    addMessage('抱歉，加载历史聊天记录失败，请稍后重试。', 'bot');
+                }
+            } finally {
+                historyBtn.disabled = false;
+            }
+        }
+
+        // 清空历史聊天记录
+        async function clearChatHistory() {
+            if (!confirm('确定要清空当前用户的所有聊天记录吗？')) return;
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.disabled = true;
+            try {
+                const response = await fetch(`/ai/clear-chat-history/${encodeURIComponent(userId)}`, { method: 'POST' });
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                chatMessages.innerHTML = '';
+                addMessage('聊天记录已清空，请问还有什么可以帮您的？', 'bot');
+            } catch (error) {
+                console.error('清空历史记录失败:', error);
+                addMessage('抱歉，清空聊天记录失败，请稍后重试。', 'bot');
+            } finally {
+                clearBtn.disabled = false;
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // 显示用户消息
+            addMessage(message, 'user');
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+
+            // 禁用输入
+            sendBtn.disabled = true;
+            messageInput.disabled = true;
+
+            // 显示加载动画
+            showTyping();
+
+            try {
+                const response = await fetch(`/ai/aiChat?message=${encodeURIComponent(message)}&userId=${encodeURIComponent(userId)}`);
+                const text = await response.text();
+                removeTyping();
+                addMessage(text, 'bot');
+            } catch (error) {
+                removeTyping();
+                addMessage('抱歉，网络出现问题，请稍后再试。', 'bot');
+                console.error('请求失败:', error);
+            } finally {
+                sendBtn.disabled = false;
+                messageInput.disabled = false;
+                messageInput.focus();
+            }
+        }
+
+        // 页面加载时自动恢复该用户的历史聊天记录
+        loadChatHistory(true);
+    </script>
+</body>
+</html>
